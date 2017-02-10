@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
@@ -53,7 +52,7 @@ var (
 	serviceNodesHealthy = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "catalog_service_node_healthy"),
 		"Is this service healthy on this node?",
-		[]string{"service_id", "node", "service_name"}, nil,
+		[]string{"service_id", "node", "service_name", "tags"}, nil,
 	)
 	nodeChecks = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "health_node_status"),
@@ -218,6 +217,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 // combination. It will cause one lookup query per service.
 func (e *Exporter) collectHealthSummary(ch chan<- prometheus.Metric, serviceNames map[string][]string) {
 	for s := range serviceNames {
+        
 		service, _, err := e.client.Health().Service(s, "", false, &consul_api.QueryOptions{})
 		if err != nil {
 			log.Errorf("Failed to query service health: %v", err)
@@ -236,7 +236,7 @@ func (e *Exporter) collectHealthSummary(ch chan<- prometheus.Metric, serviceName
 				}
 			}
 			ch <- prometheus.MustNewConstMetric(
-				serviceNodesHealthy, prometheus.GaugeValue, passing, entry.Service.ID, entry.Node.Node, entry.Service.Service,
+				serviceNodesHealthy, prometheus.GaugeValue, passing, entry.Service.ID, entry.Node.Node, entry.Service.Service, strings.Join(entry.Service.Tags, ","),
 			)
 		}
 	}
